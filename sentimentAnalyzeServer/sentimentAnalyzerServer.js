@@ -1,24 +1,9 @@
 const express = require('express');
-const app = new express();
-const dotenv = require('dotenv');
-dotenv.config();
+const dotenv = require('dotenv')
+const nluinstancecreator = require('./Middleware/IBMNewInstanceCreator')
+dotenv.config()
 
-function getNLUInstance() {
-    let api_key = process.env.API_KEY;
-    let api_url = process.env.API_URL;
-    
-    const NaturalLanguageUnderstandingV1 = require('ibm-watson/natural-language-understanding/v1');
-    const { IamAuthenticator } = require('ibm-watson/auth');
-    
-    const naturalLanguageUnderstanding = new NaturalLanguageUnderstandingV1({
-    version: '2020-08-01',
-    authenticator: new IamAuthenticator({
-        apikey: api_key,
-    }),
-    serviceUrl: api_url,
-    });
-    return naturalLanguageUnderstanding;
-}
+const app = new express();
 
 app.use(express.static('client'))
 
@@ -30,93 +15,114 @@ app.get("/",(req,res)=>{
   });
 
 app.get("/url/emotion", (req,res) => {
-
-    const analyzeParamsEmotion = {
-        'url': req.query.url,
+    const querytext = req.query.url
+    const newinstance = nluinstancecreator
+    const analyzeparams = {
+        'url': querytext,
         'features': {
-            'emotion': {
-            'limit': 5
+            'entities' : {
+                'emotion' : true,
+                'sentiment': false
+            }, 'keywords': {
+                'emotion': true,
+                'sentiment': false
+
             }
-        }
+        } 
     }
-    
-    getNLUInstance().analyze(analyzeParamsEmotion)
-    .then(analysisResults => {
-    console.log(JSON.stringify(analysisResults, null, 2));
-    return res.send(analysisResults.result.emotion.document.emotion);
-    })
-    .catch(err => {
-    console.log('error:', err);
-    });
-    
-    //return res.send({"happy":"90","sad":"10"});
+
+    newinstance.analyze(analyzeparams).then(analysisresults =>
+        {
+           const emotionalanalysis = analysisresults.result.entities[0].emotion
+            return res.send({emotions: emotionalanalysis});
+        }).catch( err =>
+            {
+                console.log(err)
+            })
 });
 
 app.get("/url/sentiment", (req,res) => {
-
-    const analyzeParamsSentiment = {
-        'url': req.query.url,
+    const querytext = req.query.url
+    const newinstance = nluinstancecreator
+    let sentimentresponse
+    const analyzeparams = {
+        'url': querytext,
         'features': {
-            'sentiment': {
+            'entities' : {
+                'sentiment' : true,
+                'emotion'  : false
+            }, 'keywords': {
+                'sentiment': true,
+                'emotion': false
+
             }
-        }
+        } 
     }
 
-    getNLUInstance().analyze(analyzeParamsSentiment)
-    .then(analysisResults => {
-    console.log(JSON.stringify(analysisResults, null, 2));
-    return res.send(analysisResults.result.sentiment.document.label);
-    })
-    .catch(err => {
-    console.log('error:', err);
-    });
-
-    //return res.send("url sentiment for "+req.query.url);
+    newinstance.analyze(analyzeparams).then(analysisresults =>
+        {
+            console.log(JSON.stringify(analysisresults, null, 2))
+            sentimentresponse = analysisresults.result.entities[0].sentiment.label
+            return res.send({senti: sentimentresponse});
+        }).catch( err =>
+            {
+                console.log(err)
+            })
 });
 
 app.get("/text/emotion", (req,res) => {
-
-    const analyzeParamsEmotion = {
-        'text': req.query.text,
+    const querytext = req.query.text
+    const newinstance = nluinstancecreator
+    const analyzeparams = {
+        'text': querytext,
         'features': {
-            'emotion': {
-            'limit': 5
+            'entities' : {
+                'emotion' : true,
+                'sentiment': false
+            }, 'keywords': {
+                'emotion': true,
+                'sentiment': false
+
             }
-        }
+        } 
     }
 
-    getNLUInstance().analyze(analyzeParamsEmotion)
-    .then(analysisResults => {
-    console.log(JSON.stringify(analysisResults, null, 2));
-    return res.send(analysisResults.result.emotion.document.emotion);
-    })
-    .catch(err => {
-    console.log('error:', err);
-    });
-
-    //return res.send({"happy":"10","sad":"90"});
+    newinstance.analyze(analyzeparams).then(analysisresults =>
+        {
+            const emotionalanalysis = analysisresults.result.entities[0].emotion
+            return res.send({emotions: emotionalanalysis});
+        }).catch( err =>
+            {
+                console.log(err)
+            })
 });
 
 app.get("/text/sentiment", (req,res) => {
-
-    const analyzeParamsSentiment = {
-        'text': req.query.text,
+    const querytext = req.query.text
+    const newinstance = nluinstancecreator
+    const analyzeparams = {
+        'text': querytext,
         'features': {
-            'sentiment': {
+            'entities' : {
+                'sentiment' : true,
+                'emotion'  : false
+            }, 'keywords': {
+                'sentiment': true,
+                'emotion': false
+
             }
-        }
+        } 
     }
 
-    getNLUInstance().analyze(analyzeParamsSentiment)
-    .then(analysisResults => {
-    console.log(JSON.stringify(analysisResults, null, 2));
-    return res.send(analysisResults.result.sentiment.document.label);
-    })
-    .catch(err => {
-    console.log('error:', err);
-    });
-
-    //return res.send("text sentiment for "+req.query.text);
+    newinstance.analyze(analyzeparams).then(analysisresults =>
+        {
+            console.log(JSON.stringify(analysisresults, null, 2))
+            const sentimentresponse = analysisresults.result.entities[0].sentiment.label
+            return res.send({senti: sentimentresponse});
+        }).catch( err =>
+            {
+                console.log(err)
+            })
 });
 
 let server = app.listen(8080, () => {
